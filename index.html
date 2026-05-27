@@ -1,27 +1,180 @@
-window.triggerNext = function(g) {
-    const c = currentData[g]?.currentCalled || 0;
-    const t = currentData[g]?.totalIssued || 0;
-    if (c < t) {
-        // 同步寫入新的被叫號碼與獨一無二時間戳觸發語音
-        set(ref(db, `queueSystem/${g}`), {
-            currentCalled: c + 1,
-            totalIssued: t,
-            lastCallTimestamp: Date.now() + "_" + Math.random()
-        });
-    } else {
-        alert(`${g}組候位名單已空。`);
-    }
-};
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>挺豪餐廳 - 叫號控制台</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+          "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+        }
+      }
+    </script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f1f5f9; padding: 20px; margin: 0; color: #1e293b; }
+        .title { text-align: center; font-size: 1.6rem; font-weight: bold; margin-bottom: 25px; color: #0f172a; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+        
+        .panel-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; }
+        .group-title { font-size: 1.4rem; font-weight: bold; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .group-A { color: #2563eb; }
+        .group-B { color: #16a34a; }
+        .group-C { color: #ea580c; }
+        
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1.05rem; }
+        .stat-val { font-weight: bold; font-family: monospace; font-size: 1.2rem; }
+        
+        .current-display { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; text-align: center; margin: 15px 0; }
+        .current-num { font-size: 2.8rem; font-weight: bold; font-family: monospace; color: #0f172a; }
+        
+        button { width: 100%; padding: 14px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.1s; margin-top: 10px; }
+        .btn-next { background-color: #1e293b; color: white; }
+        .btn-next:hover { background-color: #0f172a; }
+        .btn-recall { background-color: #edf2f7; color: #4a5568; border: 1px solid #cbd5e1; }
+        .btn-recall:hover { background-color: #e2e8f0; }
+        .btn-reset { background-color: #fee2e2; color: #991b1b; font-size: 0.9rem; padding: 8px; margin-top: 25px; border: 1px solid #fca5a5; }
+    </style>
+</head>
+<body>
 
-window.triggerRecall = function(g) {
-    const c = currentData[g]?.currentCalled || 0;
-    const t = currentData[g]?.totalIssued || 0;
-    if (c > 0) {
-        // 號碼不變，僅改變隨機值戳記，強制大屏幕重新高呼
-        set(ref(db, `queueSystem/${g}`), {
-            currentCalled: c,
-            totalIssued: t,
-            lastCallTimestamp: Date.now() + "_" + Math.random()
+    <div class="title">挺豪餐廳 - 現場叫號管理系統</div>
+
+    <div class="grid">
+        <div class="panel-card">
+            <div class="group-title group-A"><span>A組 (1人)</span><span style="font-size:0.9rem; color:#64748b;" id="waitCountA">排隊中: 0人</span></div>
+            <div class="stat-row"><span>總共已取號：</span><span class="stat-val" id="totalA">0</span></div>
+            <div class="current-display">
+                <div style="font-size:0.85rem; color:#64748b;">當前叫號進度</div>
+                <div class="current-num" id="callA">A---</div>
+            </div>
+            <button class="btn-next" onclick="triggerNext('A')">叫下一位 (A)</button>
+            <button class="btn-recall" onclick="triggerRecall('A')">🔄 重複呼叫此號碼</button>
+        </div>
+
+        <div class="panel-card">
+            <div class="group-title group-B"><span>B組 (2-3人)</span><span style="font-size:0.9rem; color:#64748b;" id="waitCountB">排隊中: 0人</span></div>
+            <div class="stat-row"><span>總共已取號：</span><span class="stat-val" id="totalB">0</span></div>
+            <div class="current-display">
+                <div style="font-size:0.85rem; color:#64748b;">當前叫號進度</div>
+                <div class="current-num" id="callB">B---</div>
+            </div>
+            <button class="btn-next" onclick="triggerNext('B')">叫下一位 (B)</button>
+            <button class="btn-recall" onclick="triggerRecall('B')">🔄 重複呼叫此號碼</button>
+        </div>
+
+        <div class="panel-card">
+            <div class="group-title group-C"><span>C組 (4-5人)</span><span style="font-size:0.9rem; color:#64748b;" id="waitCountC">排隊中: 0人</span></div>
+            <div class="stat-row"><span>總共已取號：</span><span class="stat-val" id="totalC">0</span></div>
+            <div class="current-display">
+                <div style="font-size:0.85rem; color:#64748b;">當前叫號進度</div>
+                <div class="current-num" id="callC">C---</div>
+            </div>
+            <button class="btn-next" onclick="triggerNext('C')">叫下一位 (C)</button>
+            <button class="btn-recall" onclick="triggerRecall('C')">🔄 重複呼叫此號碼</button>
+        </div>
+    </div>
+
+    <div style="max-width:1000px; margin: 0 auto; padding: 0 20px;">
+        <button class="btn-reset" onclick="clearAllQueueData()">⚠️ 營業結束：清空全日排隊及叫號記錄（慎用）</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getDatabase, ref, onValue, set } from "firebase/database";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
+            authDomain: "my-queue-system-3bcc5.firebaseapp.com",
+            databaseURL: "https://my-queue-system-3bcc5-default-rtdb.firebaseio.com",
+            projectId: "my-queue-system-3bcc5",
+            storageBucket: "my-queue-system-3bcc5.firebasestorage.app",
+            messagingSenderId: "32354532851",
+            appId: "1:32354532851:web:4ba48fcc31bb454399a686"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentData = {};
+
+        // 監聽叫號系統數據
+        onValue(ref(db, 'queueSystem'), (snapshot) => {
+            currentData = snapshot.val() || {};
+            
+            ['A', 'B', 'C'].forEach(g => {
+                const total = currentData[g]?.totalIssued || 0;
+                const called = currentData[g]?.currentCalled || 0;
+                const waiting = total - called;
+
+                document.getElementById(`total${g}`).innerText = total;
+                document.getElementById(`call${g}`).innerText = called > 0 ? g + String(called).padStart(3, '0') : "---";
+                
+                const waitEl = document.getElementById(`waitCount${g}`);
+                waitEl.innerText = `排隊中: ${waiting}人`;
+                // 超過10人提示變紅
+                waitEl.style.color = waiting >= 10 ? "#ef4444" : "#64748b";
+                waitEl.style.fontWeight = waiting >= 10 ? "bold" : "normal";
+            });
         });
-    }
-};
+
+        // 按鈕功能：叫下一位（號碼順序純遞增，不重複使用）
+        window.triggerNext = function(g) {
+            const called = currentData[g]?.currentCalled || 0;
+            const total = currentData[g]?.totalIssued || 0;
+
+            if (called < total) {
+                const nextNum = called + 1;
+                // 寫入新號碼，並塞入包含隨機數的時間戳，強迫大屏幕識別並廣播
+                set(ref(db, `queueSystem/${g}`), {
+                    currentCalled: nextNum,
+                    totalIssued: total,
+                    lastCallTimestamp: Date.now() + "_" + Math.floor(Math.random() * 1000)
+                }).then(() => {
+                    console.log(`${g}組已叫號至: ${nextNum}`);
+                });
+            } else {
+                alert(`目前沒有客人在排隊等待 ${g} 組。`);
+            }
+        };
+
+        // 按鈕功能：🔥 重複呼叫（保持號碼不變，更新時間戳強制大屏幕發聲）
+        window.triggerRecall = function(g) {
+            const called = currentData[g]?.currentCalled || 0;
+            const total = currentData[g]?.totalIssued || 0;
+
+            if (called > 0) {
+                // 號碼完全不變，只更新後方的隨機戳，達到重新叫號廣播的目的
+                set(ref(db, `queueSystem/${g}`), {
+                    currentCalled: called,
+                    totalIssued: total,
+                    lastCallTimestamp: Date.now() + "_" + Math.floor(Math.random() * 1000)
+                }).then(() => {
+                    console.log(`${g}組已觸發重複呼叫：${g}${String(called).padStart(3,'0')}`);
+                });
+            } else {
+                alert(`當前尚未開始叫號，無法重複呼叫。`);
+            }
+        };
+
+        // ⚠️ 萬能重置（營業結束洗白全系統）
+        window.clearAllQueueData = function() {
+            if (confirm("確定要重置整個系統嗎？此操作將清空所有叫號進度、客人排隊與正在用餐的記錄！")) {
+                if (confirm("請再次確認，此操作不可逆！")) {
+                    set(ref(db), {
+                        queueSystem: {
+                            A: { currentCalled: 0, totalIssued: 0, lastCallTimestamp: "" },
+                            B: { currentCalled: 0, totalIssued: 0, lastCallTimestamp: "" },
+                            C: { currentCalled: 0, totalIssued: 0, lastCallTimestamp: "" }
+                        },
+                        comboSystem: null
+                    }).then(() => {
+                        alert("全系統數據已成功初始化洗白！");
+                    });
+                }
+            }
+        };
+    </script>
+</body>
+</html>
