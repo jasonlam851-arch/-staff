@@ -2,8 +2,8 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>店員控制面板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>挺豪餐廳 - 控制面板</title>
     <script type="importmap">
       {
         "imports": {
@@ -13,58 +13,65 @@
       }
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; background-color: #edf2f7; padding: 20px; }
-        h1 { text-align: center; color: #2d3748; margin-bottom: 20px; }
-        .panel { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .panel-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid; }
-        .title-a { color: #3182ce; border-color: #3182ce; }
-        .title-b { color: #dd6b20; border-color: #dd6b20; }
-        .title-c { color: #38a169; border-color: #38a169; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { flex: 1; padding: 15px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; }
-        .btn-next { background-color: #48bb78; }
-        .btn-recall { background-color: #a0aec0; }
-        .status-txt { font-size: 1rem; color: #4a5568; line-height: 1.6; }
-        .btn-reset { background-color: #e53e3e; width: 100%; padding: 12px; font-size: 1rem; border-radius: 8px; border: none; color: white; margin-top: 20px; font-weight: bold; }
+        body { font-family: system-ui, sans-serif; background-color: #edf2f7; padding: 15px; margin: 0; padding-bottom: 80px; }
+        h1 { text-align: center; color: #2d3748; margin-bottom: 20px; font-size: 1.6rem; letter-spacing: 2px; }
+        .panel { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .p-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid; }
+        .t-a { color: #3182ce; border-color: #3182ce; }
+        .t-b { color: #dd6b20; border-color: #dd6b20; }
+        .t-c { color: #38a169; border-color: #38a169; }
+        .btn-g { display: flex; gap: 8px; margin-bottom: 10px; }
+        button { flex: 1; padding: 12px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; transition: background 0.1s; }
+        button:active { transform: scale(0.98); }
+        .b-next { background-color: #48bb78; }
+        .b-next:hover { background-color: #38a169; }
+        .b-re { background-color: #a0aec0; }
+        .s-txt { font-size: 0.9rem; color: #718096; line-height: 1.5; }
+        
+        .global-actions { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px; background: white; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+        .b-reset { background-color: #e53e3e; width: 100%; padding: 12px; font-size: 1rem; border-radius: 8px; border: none; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <h1>🏪 店員叫號控制面板</h1>
+    <h1>控制面板</h1>
 
     <div class="panel">
-        <div class="panel-title title-a">🧍 A組 (1人)</div>
-        <div class="btn-group">
-            <button class="btn-next" onclick="nextNum('A')">🔔 叫下一位</button>
-            <button class="btn-recall" onclick="recallNum('A')">🔄 重呼</button>
+        <div class="p-title t-a">A組 (1人)</div>
+        <div class="btn-g">
+            <button class="b-next" onclick="callNext('A')">叫下一位</button>
+            <button class="b-re" onclick="recall('A')">重呼</button>
         </div>
-        <div class="status-txt">當前叫號：<b id="callA">A---</b> | 已取號總數：<span id="totalA">0</span></div>
+        <div class="s-txt">當前：<b id="cA" style="color:#2d3748; font-size:1.1rem;">A---</b> | 取號總數：<span id="tA">0</span></div>
     </div>
 
     <div class="panel">
-        <div class="panel-title title-b">👨‍👦 B組 (2-3人)</div>
-        <div class="btn-group">
-            <button class="btn-next" onclick="nextNum('B')">🔔 叫下一位</button>
-            <button class="btn-recall" onclick="recallNum('B')">🔄 重呼</button>
+        <div class="p-title t-b">B組 (2-3人)</div>
+        <div class="btn-g">
+            <button class="b-next" onclick="callNext('B')">叫下一位</button>
+            <button class="b-re" onclick="recall('B')">重呼</button>
         </div>
-        <div class="status-txt">當前叫號：<b id="callB">B---</b> | 已取號總數：<span id="totalB">0</span></div>
+        <div class="s-txt">當前：<b id="cB" style="color:#2d3748; font-size:1.1rem;">B---</b> | 取號總數：<span id="tB">0</span></div>
     </div>
 
     <div class="panel">
-        <div class="panel-title title-c">👨‍👩‍👧‍👦 C組 (4-5人)</div>
-        <div class="btn-group">
-            <button class="btn-next" onclick="nextNum('C')">🔔 叫下一位</button>
-            <button class="btn-recall" onclick="recallNum('C')">🔄 重呼</button>
+        <div class="p-title t-c">C組 (4-5人)</div>
+        <div class="btn-g">
+            <button class="b-next" onclick="callNext('C')">叫下一位</button>
+            <button class="b-re" onclick="recall('C')">重呼</button>
         </div>
-        <div class="status-txt">當前叫號：<b id="callC">C---</b> | 已取號總數：<span id="totalC">0</span></div>
+        <div class="s-txt">當前：<b id="cC" style="color:#2d3748; font-size:1.1rem;">C---</b> | 取號總數：<span id="tC">0</span></div>
     </div>
 
-    <button class="btn-reset" onclick="resetAll()">⚠️ 全體數據清零重置</button>
+    <div class="global-actions">
+        <button class="b-reset" onclick="resetAll()">全體清零重置 (同步清空客人號碼)</button>
+    </div>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, set, onValue } from "firebase/database";
+        import { getDatabase, ref, set, onValue, update } from "firebase/database";
 
+        // Firebase 設定沿用
         const firebaseConfig = {
             apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
             authDomain: "my-queue-system-3bcc5.firebaseapp.com",
@@ -78,46 +85,51 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let systemData = {};
+        let sData = {};
 
         // 監聽數據
         onValue(ref(db, 'queueSystem'), (snapshot) => {
-            systemData = snapshot.val() || {};
+            sData = snapshot.val() || {};
             ['A', 'B', 'C'].forEach(type => {
-                const called = systemData[type]?.currentCalled || 0;
-                const total = systemData[type]?.totalIssued || 0;
+                const called = sData[type]?.currentCalled || 0;
+                const total = sData[type]?.totalIssued || 0;
                 
-                document.getElementById(`call${type}`).innerText = called > 0 ? type + String(called).padStart(3, '0') : type + "---";
-                document.getElementById(`total${type}`).innerText = total;
+                document.getElementById(`c${type}`).innerText = called > 0 ? type + String(called).padStart(3, '0') : type + "---";
+                document.getElementById(`t${type}`).innerText = total;
             });
         });
 
         // 叫下一位
-        window.nextNum = function(type) {
-            const current = systemData[type]?.currentCalled || 0;
-            const total = systemData[type]?.totalIssued || 0;
+        window.callNext = function(type) {
+            // 先關閉之前的「全體重置」狀態
+            update(ref(db, 'queueSystem'), { isGlobalReset: false });
+
+            const current = sData[type]?.currentCalled || 0;
+            const total = sData[type]?.totalIssued || 0;
             if (current < total) {
                 set(ref(db, `queueSystem/${type}/currentCalled`), current + 1);
             } else {
-                alert(`${type}組 目前沒有客人在排隊！`);
+                alert(`${type}組 目前沒有人在排隊！`);
             }
         };
 
         // 重呼
-        window.recallNum = function(type) {
-            const current = systemData[type]?.currentCalled || 0;
+        window.recall = function(type) {
+            const current = sData[type]?.currentCalled || 0;
             if (current > 0) {
-                // 透過重寫一次雲端引發 screen.html 再次發聲
-                set(ref(db, `queueSystem/${type}/currentCalled`), current); 
+                set(ref(db, `queueSystem/${type}/currentCalled`), current); // 重寫引發閃爍
             } else {
-                alert(`${type}組 尚未開始叫號！`);
+                alert(`${type}組 尚未叫號！`);
             }
         };
 
-        // 重置
+        // 【關鍵：重置邏輯】
         window.resetAll = function() {
-            if (confirm("確定要將所有 A、B、C 組數據全部清零重置嗎？")) {
+            if (confirm("確定全體清零嗎？這將通知所有客人手機「過號/重新取號」。")) {
+                // 1. 重置所有數據為 0
+                // 2. 🔥 【通知客人】🔥：設定 'isGlobalReset' 為 true，客人手機看到這個就會自動刪號碼。
                 set(ref(db, 'queueSystem'), {
+                    isGlobalReset: true,
                     A: { currentCalled: 0, totalIssued: 0 },
                     B: { currentCalled: 0, totalIssued: 0 },
                     C: { currentCalled: 0, totalIssued: 0 }
