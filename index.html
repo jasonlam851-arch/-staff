@@ -1,119 +1,27 @@
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>挺豪餐廳 - 叫號控制中心</title>
-    <script type="importmap">
-      {
-        "imports": {
-          "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-          "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
-        }
-      }
-    </script>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; color: #333; }
-        .main-title { text-align: center; color: #102a43; font-size: 1.5rem; font-weight: bold; margin-bottom: 25px; letter-spacing: 1px; }
-        .control-box { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-left: 5px solid; }
-        .border-a { border-left-color: #2b6cb0; }
-        .border-b { border-left-color: #c05621; }
-        .border-c { border-left-color: #2f855a; }
-        .box-title { font-size: 1.15rem; font-weight: bold; margin-bottom: 15px; }
-        .color-a { color: #2b6cb0; }
-        .color-b { color: #c05621; }
-        .color-c { color: #2f855a; }
-        .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        button { flex: 1; padding: 12px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; color: white; }
-        button:active { opacity: 0.85; }
-        .btn-call { background-color: #38a169; }
-        .btn-recall { background-color: #718096; }
-        .status-info { font-size: 0.9rem; color: #627d98; font-family: monospace; }
-        .btn-reset-danger { width: 100%; margin-top: 20px; padding: 12px; background-color: #e53e3e; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; }
-    </style>
-</head>
-<body>
-
-    <div class="main-title">挺豪餐廳 - 叫號控制面板</div>
-
-    <div class="control-box border-a">
-        <div class="box-title color-a">A組 (1人席)</div>
-        <div class="btn-row">
-            <button class="btn-call" onclick="triggerNext('A')">叫下一位</button>
-            <button class="btn-recall" onclick="triggerRecall('A')">重複呼叫</button>
-        </div>
-        <div class="status-info">當前叫號: <span id="lblA" style="font-weight:bold; font-size:1.1rem; color:#102a43;">A---</span> | 取號總數: <span id="totA">0</span></div>
-    </div>
-
-    <div class="control-box border-b">
-        <div class="box-title color-b">B組 (2-3人席)</div>
-        <div class="btn-row">
-            <button class="btn-call" onclick="triggerNext('B')">叫下一位</button>
-            <button class="btn-recall" onclick="triggerRecall('B')">重複呼叫</button>
-        </div>
-        <div class="status-info">當前叫號: <span id="lblB" style="font-weight:bold; font-size:1.1rem; color:#102a43;">B---</span> | 取號總數: <span id="totB">0</span></div>
-    </div>
-
-    <div class="control-box border-c">
-        <div class="box-title color-c">C組 (4-5人席)</div>
-        <div class="btn-row">
-            <button class="btn-call" onclick="triggerNext('C')">叫下一位</button>
-            <button class="btn-recall" onclick="triggerRecall('C')">重複呼叫</button>
-        </div>
-        <div class="status-info">當前叫號: <span id="lblC" style="font-weight:bold; font-size:1.1rem; color:#102a43;">C---</span> | 取號總數: <span id="totC">0</span></div>
-    </div>
-
-    <button class="btn-reset-danger" onclick="triggerResetAll()">全體叫號數據清零</button>
-
-    <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, set, onValue } from "firebase/database";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
-            authDomain: "my-queue-system-3bcc5.firebaseapp.com",
-            databaseURL: "https://my-queue-system-3bcc5-default-rtdb.firebaseio.com",
-            projectId: "my-queue-system-3bcc5",
-            storageBucket: "my-queue-system-3bcc5.firebasestorage.app",
-            messagingSenderId: "32354532851",
-            appId: "1:32354532851:web:4ba48fcc31bb454399a686"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let currentData = {};
-
-        onValue(ref(db, 'queueSystem'), (snapshot) => {
-            currentData = snapshot.val() || {};
-            ['A', 'B', 'C'].forEach(g => {
-                const c = currentData[g]?.currentCalled || 0;
-                const t = currentData[g]?.totalIssued || 0;
-                document.getElementById(`lbl${g}`).innerText = c > 0 ? g + String(c).padStart(3, '0') : g + "---";
-                document.getElementById(`tot${g}`).innerText = t;
-            });
+window.triggerNext = function(g) {
+    const c = currentData[g]?.currentCalled || 0;
+    const t = currentData[g]?.totalIssued || 0;
+    if (c < t) {
+        // 同步寫入新的被叫號碼與獨一無二時間戳觸發語音
+        set(ref(db, `queueSystem/${g}`), {
+            currentCalled: c + 1,
+            totalIssued: t,
+            lastCallTimestamp: Date.now() + "_" + Math.random()
         });
+    } else {
+        alert(`${g}組候位名單已空。`);
+    }
+};
 
-        window.triggerNext = function(g) {
-            const c = currentData[g]?.currentCalled || 0;
-            const t = currentData[g]?.totalIssued || 0;
-            if (c < t) set(ref(db, `queueSystem/${g}/currentCalled`), c + 1);
-            else alert(`${g}組候位名單已空。`);
-        };
-
-        window.triggerRecall = function(g) {
-            const c = currentData[g]?.currentCalled || 0;
-            if (c > 0) set(ref(db, `queueSystem/${g}/currentCalled`), c);
-        };
-
-        window.triggerResetAll = function() {
-            if (confirm("確認重置全體排隊號碼嗎？")) {
-                set(ref(db, 'queueSystem'), {
-                    A: { currentCalled: 0, totalIssued: 0 },
-                    B: { currentCalled: 0, totalIssued: 0 },
-                    C: { currentCalled: 0, totalIssued: 0 }
-                });
-            }
-        };
-    </script>
-</body>
-</html>
+window.triggerRecall = function(g) {
+    const c = currentData[g]?.currentCalled || 0;
+    const t = currentData[g]?.totalIssued || 0;
+    if (c > 0) {
+        // 號碼不變，僅改變隨機值戳記，強制大屏幕重新高呼
+        set(ref(db, `queueSystem/${g}`), {
+            currentCalled: c,
+            totalIssued: t,
+            lastCallTimestamp: Date.now() + "_" + Math.random()
+        });
+    }
+};
